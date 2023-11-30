@@ -1,0 +1,31 @@
+# Vertices
+RAIO = 10
+VERTICES_FONT = 15
+
+# Arestas
+ESPESSURA = 3
+ARESTAS_FONT = 25
+
+# Cores
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0 , 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+ORANGE = (255, 165, 0)
+GRAY = (100, 100, 100)
+GRAY_DARK = (50, 50, 50)
+
+# Fontes
+BASE_FONT = 'Arial'
+
+# Pygame
+TITLE = 'Simulador de Grafos'
+RES = WIDTH, HEIGHT = (640, 480)
+BG_COLOR = GRAY
+FPS = 60
+
+# WidgetArestaWeight
+WIDTH_WIDGET = 100
+HEIGHT_WIDGET = 30
+COLOR_WIDGET = GRAY_DARK
