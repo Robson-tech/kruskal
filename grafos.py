@@ -93,6 +93,16 @@ def encontrar_AGM(arestas: list, n: int):
     return agm
 
 
+def procurar_aresta(arestas: list, v1: Vertice, v2: Vertice):
+    encontrado = False
+    for aresta in arestas:
+        if (aresta.v1 == v1 and aresta.v2 == v2) or \
+           (aresta.v1 == v2 and aresta.v2 == v1):
+            encontrado = True
+            break
+    return encontrado
+
+
 if __name__ == '__main__':
     vertices = [
         Vertice(100, 100, 0),

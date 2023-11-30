@@ -1,6 +1,6 @@
 # Vertices
-RAIO = 10
-VERTICES_FONT = 15
+RAIO = 20
+VERTICES_FONT = 25
 
 # Arestas
 ESPESSURA = 3
@@ -18,6 +18,7 @@ GRAY_DARK = (50, 50, 50)
 
 # Fontes
 BASE_FONT = 'Arial'
+BASE_FONT_SIZE = 20
 
 # Pygame
 TITLE = 'Simulador de Grafos'
