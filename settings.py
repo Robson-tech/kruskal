@@ -3,7 +3,7 @@ RAIO = 20
 VERTICES_FONT = 25
 
 # Arestas
-ESPESSURA = 3
+ESPESSURA = 5
 ARESTAS_FONT = 25
 
 # Cores

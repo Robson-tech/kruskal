@@ -7,12 +7,13 @@ import settings
 
 class State:
     def __init__(self, vertices: list, arestas: list, action: str):
+        self.time = datetime.datetime.now()
         self.vertices = vertices
         self.arestas = arestas
         self.action = action
 
     def __str__(self):
-        return f'vertices: {len(self.vertices)} - arestas: {len(self.arestas)} - action: {self.action}'
+        return f'{datetime.datetime.now()} - vertices: {len(self.vertices)} - arestas: {len(self.arestas)} - action: {self.action}'
 
 
 class Simulator:
@@ -23,13 +24,19 @@ class Simulator:
         self.clock = pg.time.Clock()
         self.fps = settings.FPS
         self.running = True
+        self.move_vertices = False
         self.states = []
         self.vertices = []
         self.arestas = []
         self.widget = widgets.WidgetArestaWeight()
         self.selected1 = None
         self.selected2 = None
+        self.moving_vertice = None
         self.states.append(State(self.vertices.copy(), self.arestas.copy(), 'first_state'))
+    
+    def log_states(self):
+        for num, state in enumerate(self.states):
+            print(f'{num}) {state}')
     
     def reset(self):
         self.vertices = []
@@ -44,11 +51,17 @@ class Simulator:
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                 self.running = False
             # Adiciona vértices com o botão esquerdo do mouse e arestas com o botão direito
-            if event.type == pg.MOUSEBUTTONDOWN:
-                if event.button == 1 and not self.widget.active:
-                    self.vertices.append(grafos.Vertice(*event.pos, len(self.vertices)))
-                    self.states.append(State(self.vertices.copy(), self.arestas.copy(), 'add_vertice'))
-                if event.button == 3 and not self.widget.active:
+            if event.type == pg.MOUSEBUTTONDOWN and not self.widget.active:
+                if event.button == 1:
+                    if not self.move_vertices:
+                        self.vertices.append(grafos.Vertice(*event.pos, len(self.vertices)))
+                        self.states.append(State(self.vertices.copy(), self.arestas.copy(), 'add_vertice'))
+                    else:
+                        for vertice in self.vertices:
+                            if vertice.check_collision(event.pos):
+                                self.moving_vertice = vertice
+                                break
+                if event.button == 3:
                     for vertice in self.vertices:
                         if vertice.check_collision(event.pos):
                             vertice.turn_on()
@@ -63,6 +76,11 @@ class Simulator:
                                     self.selected2.turn_off()
                                     self.selected1 = None
                                     self.selected2 = None
+            if event.type == pg.MOUSEMOTION and self.moving_vertice:
+                self.moving_vertice.x += event.rel[0]
+                self.moving_vertice.y += event.rel[1]
+            if event.type == pg.MOUSEBUTTONUP:
+                self.moving_vertice = None
             # Adiciona o peso da aresta
             if event.type == pg.KEYDOWN and self.widget.active:
                 if event.key == pg.K_RETURN:
@@ -78,6 +96,10 @@ class Simulator:
                     self.widget.text = self.widget.text[:-1]
                 elif event.unicode.isdigit():
                     self.widget.text += event.unicode
+            # Move os vértices ao apertar a tecla 'm'
+            if event.type == pg.KEYDOWN and event.key == pg.K_m:
+                self.move_vertices = not self.move_vertices
+                pg.mouse.set_system_cursor(pg.SYSTEM_CURSOR_HAND if self.move_vertices else pg.SYSTEM_CURSOR_ARROW)
             # Desseleciona o vértice ao apertar a tecla 'backspace'
             if event.type == pg.KEYDOWN and event.key == pg.K_BACKSPACE and not self.widget.active:
                 if self.selected1 is not None:
@@ -98,18 +120,18 @@ class Simulator:
                 self.arestas = grafos.encontrar_AGM(self.arestas, len(self.vertices))
                 self.states.append(State(self.vertices.copy(), self.arestas.copy(), 'encontrar_AGM'))
             if event.type == pg.KEYDOWN and event.key == pg.K_s:
-                for num, state in enumerate(self.states):
-                    print(f'{num}) {datetime.datetime.now()} - {state}')
+                self.log_states()
 
     def update(self, dt):
         pass
 
     def draw(self):
+        print(self.move_vertices, self.moving_vertice)
         self.screen.fill(settings.BG_COLOR)
-        for vertice in self.vertices:
-            vertice.draw(self.screen)
         for aresta in self.arestas:
             aresta.draw(self.screen)
+        for vertice in self.vertices:
+            vertice.draw(self.screen)
         if self.widget.active:
             self.widget.draw(self.screen)
         num_vertices = len(self.vertices)
