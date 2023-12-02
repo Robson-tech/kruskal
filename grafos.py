@@ -10,6 +10,9 @@ class Vertice:
         self.color = settings.RED
         self.radius = settings.RAIO
         self.rect = pg.Rect(self.x - self.radius, self.y - self.radius, self.radius * 2, self.radius * 2)
+    
+    def __str__(self):
+        return f'V{self.id}({self.x}, {self.y})'
 
     def draw(self, screen):
         pg.draw.circle(screen, self.color, (self.x, self.y), self.radius)
@@ -38,10 +41,22 @@ class Aresta:
         self.color = settings.ORANGE
         self.thickness = settings.ESPESSURA
 
+    def __str__(self):
+        return f'A({self.v1.id}, {self.v2.id}, {self.weight})'
+
     def draw(self, screen):
         pg.draw.line(screen, self.color, (self.v1.x, self.v1.y), (self.v2.x, self.v2.y), self.thickness)
         txt = pg.font.SysFont(settings.BASE_FONT, settings.ARESTAS_FONT).render(str(self.weight), True, settings.WHITE)
         screen.blit(txt, ((self.v1.x + self.v2.x) / 2, (self.v1.y + self.v2.y) / 2))
+
+
+class Grafo:
+    def __init__(self, vertices=[], arestas=[]):
+        self.vertices = vertices
+        self.arestas = arestas
+
+    def __str__(self):
+        return f'Vertices: {len(self.vertices)} - Arestas: {len(self.arestas)}'
 
 
 class Subconjunto:

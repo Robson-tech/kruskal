@@ -7,31 +7,26 @@ import copy
 
 
 class State:
-    def __init__(self, vertices: list, arestas: list, action: str):
+    def __init__(self, grafo: grafos.Grafo):
         self.time = datetime.datetime.now()
-        self.vertices = vertices
-        self.arestas = arestas
-        self.action = action
+        self.grafo = grafo
 
     def __str__(self):
-        return f'{datetime.datetime.now()} - vertices: {len(self.vertices)} - arestas: {len(self.arestas)} - action: {self.action}'
+        return f'{datetime.datetime.now()} - {self.grafo} - Action: {self.action}'
 
 
 class Memory:
     def __init__(self):
-        self.states = []
+        self.slots = 10
+        self.states = [None for _ in range(self.slots)]
 
-    def add_state(self, state: State):
-        self.states.append(state)
-
-    def get_state(self, index: int):
+    def save_state(self, state: State, index: int):
+        if index < 0 or index > self.slots - 1:
+            raise IndexError('Index out of range')
+        self.states.insert(index, state)
+        
+    def load_state(self, index: int):
         return self.states[index]
-
-    def get_last_state(self):
-        return self.states[-1]
-
-    def get_states(self):
-        return self.states
 
 
 class Simulator:
@@ -43,22 +38,16 @@ class Simulator:
         self.fps = settings.FPS
         self.running = True
         self.move_vertices = False
+        self.grafo = grafos.Grafo()
         self.memory = Memory()
-        self.vertices = []
-        self.arestas = []
         self.widget = widgets.WidgetArestaWeight()
         self.selected1 = None
         self.selected2 = None
         self.moving_vertice = None
-        self.memory.add_state(State(copy.deepcopy(self.vertices), copy.deepcopy(self.arestas), 'first_state'))
-    
-    def log_states(self):
-        for num, state in enumerate(self.memory.get_states()):
-            print(f'{num} - {state}')
     
     def reset(self):
-        self.vertices = []
-        self.arestas = []
+        self.grafo.vertices = []
+        self.grafo.arestas = []
         self.widget = widgets.WidgetArestaWeight()
         self.selected1 = None
         self.selected2 = None
@@ -72,21 +61,20 @@ class Simulator:
             if event.type == pg.MOUSEBUTTONDOWN and not self.widget.active:
                 if event.button == 1:
                     if not self.move_vertices:
-                        self.vertices.append(grafos.Vertice(*event.pos, len(self.vertices)))
-                        self.memory.add_state(State(copy.deepcopy(self.vertices), copy.deepcopy(self.arestas), 'add_vertice'))
+                        self.grafo.vertices.append(grafos.Vertice(*event.pos, len(self.grafo.vertices)))
                     else:
-                        for vertice in self.vertices:
+                        for vertice in self.grafo.vertices:
                             if vertice.check_collision(event.pos):
                                 self.moving_vertice = vertice
                 if event.button == 3:
-                    for vertice in self.vertices:
+                    for vertice in self.grafo.vertices:
                         if vertice.check_collision(event.pos):
                             vertice.turn_on()
                             if self.selected1 is None:
                                 self.selected1 = vertice
                             elif self.selected2 is None and vertice != self.selected1:
                                 self.selected2 = vertice
-                                if not grafos.procurar_aresta(self.arestas, self.selected1, self.selected2):
+                                if not grafos.procurar_aresta(self.grafo.arestas, self.selected1, self.selected2):
                                     self.widget.active = True
                                 else:
                                     self.selected1.turn_off()
@@ -98,19 +86,17 @@ class Simulator:
                 self.moving_vertice.move(event.pos)
             # Solta o vértice selecionado
             if event.type == pg.MOUSEBUTTONUP and self.moving_vertice is not None:
-                self.memory.add_state(State(copy.deepcopy(self.vertices), copy.deepcopy(self.arestas), f'move_vertice {self.moving_vertice.id}'))
                 self.moving_vertice = None
             # Adiciona o peso da aresta
             if event.type == pg.KEYDOWN and self.widget.active:
                 if event.key == pg.K_RETURN:
                     self.widget.active = False
-                    self.arestas.append(grafos.Aresta(self.selected1, self.selected2, int(self.widget.text)))
+                    self.grafo.arestas.append(grafos.Aresta(self.selected1, self.selected2, int(self.widget.text)))
                     self.selected1.turn_off()
                     self.selected2.turn_off()
                     self.selected1 = None
                     self.selected2 = None
                     self.widget.text = ''
-                    self.memory.add_state(State(copy.deepcopy(self.vertices), copy.deepcopy(self.arestas), 'add_aresta'))
                 if event.key == pg.K_BACKSPACE:
                     self.widget.text = self.widget.text[:-1]
                 elif event.unicode.isdigit():
@@ -127,39 +113,29 @@ class Simulator:
             # Reseta o grafo ao apertar a tecla 'r'
             if event.type == pg.KEYDOWN and event.key == pg.K_r:
                 self.reset()
-                self.memory.add_state(State(copy.deepcopy(self.vertices), copy.deepcopy(self.arestas), 'reset'))
-            # Desfaz a última ação ao apertar a tecla 'z'
-            if event.type == pg.KEYDOWN and event.key == pg.K_z:
-                if len(self.memory.get_states()) > 1:
-                    self.memory.get_states().pop()
-                    state = self.memory.get_last_state()
-                    self.vertices = state.vertices
-                    self.arestas = state.arestas
-                    self.widget.active = False
-                    self.selected1 = None
-                    self.selected2 = None
-                    self.moving_vertice = None
             # Encontra a árvore geradora mínima do grafo ao apertar a barra de espaço
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                self.arestas = grafos.encontrar_AGM(self.arestas, len(self.vertices))
-                self.memory.add_state(State(copy.deepcopy(self.vertices), copy.deepcopy(self.arestas), 'encontrar_AGM'))
+                self.grafo.arestas = grafos.encontrar_AGM(self.grafo.arestas, len(self.grafo.vertices))
+            # Salva o estado atual do grafo ao apertar a tecla 's'
             if event.type == pg.KEYDOWN and event.key == pg.K_s:
-                self.log_states()
+                self.memory.save_state(State(copy.deepcopy(self.grafo)), 0)
+            # Carrega o estado anterior do grafo ao apertar a tecla 'l'
+            if event.type == pg.KEYDOWN and event.key == pg.K_l:
+                self.grafo = self.memory.load_state(0).grafo
 
     def update(self, dt):
         pass
 
     def draw(self):
-        # print(self.move_vertices, self.moving_vertice)
         self.screen.fill(settings.BG_COLOR)
-        for aresta in self.arestas:
+        for aresta in self.grafo.arestas:
             aresta.draw(self.screen)
-        for vertice in self.vertices:
+        for vertice in self.grafo.vertices:
             vertice.draw(self.screen)
         if self.widget.active:
             self.widget.draw(self.screen)
-        num_vertices = len(self.vertices)
-        num_arestas = len(self.arestas)
+        num_vertices = len(self.grafo.vertices)
+        num_arestas = len(self.grafo.arestas)
         font = pg.font.SysFont(settings.BASE_FONT, settings.BASE_FONT_SIZE)
         txt = font.render(f'Vertices: {num_vertices}', True, settings.WHITE)
         self.screen.blit(txt, (10, 10))
