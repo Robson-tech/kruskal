@@ -24,6 +24,10 @@ class Vertice:
 
     def check_collision(self, mouse_pos):
         return self.rect.collidepoint(mouse_pos)
+    
+    def move(self, mouse_pos):
+        self.x, self.y = mouse_pos
+        self.rect = pg.Rect(self.x - self.radius, self.y - self.radius, self.radius * 2, self.radius * 2)
 
 
 class Aresta:
